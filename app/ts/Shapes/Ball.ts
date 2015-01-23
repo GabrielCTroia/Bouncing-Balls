@@ -1,4 +1,5 @@
 /// <reference path="Shape" />
+/// <reference path="Point" />
 /// <reference path="../Processes/RenderProcess" />
 /// <reference path="../Processes/MoveProcess" />
 /// <reference path="../Processes/CollisionProcess" />
@@ -8,8 +9,11 @@
 
 module Shapes {
 
-  export class Ball extends Shape implements IShape, Processes.IRenderable, Processes.IMoveable, Processes.ICollidable {
+  export interface IBall extends IShape {
+    getRadius():number;
+  }
 
+  export class Ball extends Shape implements IShape, Processes.IRenderable, Processes.IMoveable, Processes.ICollidable {
     private _radius: number;
     private _velocity: Components.IVelocity;
 
@@ -18,6 +22,10 @@ module Shapes {
 
       this._radius = radius;
       this._velocity = velocity;
+    }
+
+    getRadius() {
+      return this._radius;
     }
 
     move(): void {

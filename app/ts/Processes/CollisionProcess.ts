@@ -23,7 +23,6 @@ module Processes {
         this._targets[i].reflect(walls, others);
       }
     }
-
   }
 
 }

@@ -27,5 +27,8 @@ module Util {
       return radians * 180 / Math.PI;
     }
 
+    export function getDistance(p1: Components.IPosition, p2: Components.IPosition): number {
+      return Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2));
+    }
   }
 }

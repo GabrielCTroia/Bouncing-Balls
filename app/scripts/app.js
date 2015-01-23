@@ -23,6 +23,30 @@ var Shapes;
     })();
     Shapes.Shape = Shape;
 })(Shapes || (Shapes = {}));
+/// <reference path="Shape" />
+'use strict';
+var __extends = this.__extends || function (d, b) {
+    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
+    function __() { this.constructor = d; }
+    __.prototype = b.prototype;
+    d.prototype = new __();
+};
+var Shapes;
+(function (Shapes) {
+    var Point = (function (_super) {
+        __extends(Point, _super);
+        function Point(context, position, size) {
+            if (size === void 0) { size = 5; }
+            this._size = size;
+            _super.call(this, context, position);
+        }
+        Point.prototype.render = function () {
+            this._context.fillRect(this._position.x, this._position.y, this._size, this._size);
+        };
+        return Point;
+    })(Shapes.Shape);
+    Shapes.Point = Point;
+})(Shapes || (Shapes = {}));
 'use strict';
 /// <reference path="IProcess" />
 'use strict';
@@ -115,21 +139,20 @@ var Util;
             return radians * 180 / Math.PI;
         }
         Geometry.radiansToAngle = radiansToAngle;
+        function getDistance(p1, p2) {
+            return Math.sqrt(Math.pow(p2.x - p1.x, 2) + Math.pow(p2.y - p1.y, 2));
+        }
+        Geometry.getDistance = getDistance;
     })(Geometry = Util.Geometry || (Util.Geometry = {}));
 })(Util || (Util = {}));
 /// <reference path="Shape" />
+/// <reference path="Point" />
 /// <reference path="../Processes/RenderProcess" />
 /// <reference path="../Processes/MoveProcess" />
 /// <reference path="../Processes/CollisionProcess" />
 /// <reference path="../Components/Components" />
 /// <reference path="../Util/Geometry" />
 'use strict';
-var __extends = this.__extends || function (d, b) {
-    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
-    function __() { this.constructor = d; }
-    __.prototype = b.prototype;
-    d.prototype = new __();
-};
 var Shapes;
 (function (Shapes) {
     var Ball = (function (_super) {
@@ -139,6 +162,9 @@ var Shapes;
             this._radius = radius;
             this._velocity = velocity;
         }
+        Ball.prototype.getRadius = function () {
+            return this._radius;
+        };
         Ball.prototype.move = function () {
             var velocityUnits = Util.Geometry.getVelocityUnits(this._velocity);
             this._position.x += velocityUnits.xunit;
@@ -165,24 +191,6 @@ var Shapes;
     })(Shapes.Shape);
     Shapes.Ball = Ball;
 })(Shapes || (Shapes = {}));
-/// <reference path="Shape" />
-'use strict';
-var Shapes;
-(function (Shapes) {
-    var Point = (function (_super) {
-        __extends(Point, _super);
-        function Point(context, position, size) {
-            if (size === void 0) { size = 5; }
-            this._size = size;
-            _super.call(this, context, position);
-        }
-        Point.prototype.render = function () {
-            this._context.fillRect(this._position.x, this._position.y, this._size, this._size);
-        };
-        return Point;
-    })(Shapes.Shape);
-    Shapes.Point = Point;
-})(Shapes || (Shapes = {}));
 'use strict';
 var Util;
 (function (Util) {
@@ -194,11 +202,25 @@ var Util;
         Mathematics.randomIn = randomIn;
     })(Mathematics = Util.Mathematics || (Util.Mathematics = {}));
 })(Util || (Util = {}));
+/// <reference path="../Shapes/Ball" />
+/// <reference path="../Util/Physics" />
+'use strict';
+var Util;
+(function (Util) {
+    var Physics;
+    (function (Physics) {
+        function isOverlapping(ballA, ballB) {
+            return Util.Geometry.getDistance(ballA.getPosition(), ballB.getPosition()) <= (ballA.getRadius() + ballB.getRadius());
+        }
+        Physics.isOverlapping = isOverlapping;
+    })(Physics = Util.Physics || (Util.Physics = {}));
+})(Util || (Util = {}));
 /// <reference path="Shapes/Shape" />
 /// <reference path="Shapes/Ball" />
 /// <reference path="Shapes/Point" />
 /// <reference path="Util/Geometry" />
 /// <reference path="Util/Mathematics" />
+/// <reference path="Util/Physics" />
 /// <reference path="Processes/RenderProcess" />
 var canv = document.createElement("canvas");
 function getWorld() {
@@ -212,24 +234,38 @@ function getWorld() {
 var world = getWorld();
 // config
 var maxShapes = 50;
+var minRadius = 20;
 var maxRadius = canv.width / 10;
-var maxSpeed = 15;
+var minSpeed = 5;
+var maxSpeed = 5;
 // processes
 var renderProcess = new Processes.RenderProcess();
 var moveProcess = new Processes.MoveProcess();
 var collisionProcess = new Processes.CollisionProcess();
+var balls = [];
 for (var i = 0; i < maxShapes; i++) {
-    var ballRadius = Util.Mathematics.randomIn(10, maxRadius);
-    var ball = new Shapes.Ball(world, {
-        x: Util.Mathematics.randomIn(ballRadius + 1, canv.width - ballRadius - 1),
-        y: Util.Mathematics.randomIn(ballRadius + 1, canv.height - ballRadius - 1)
-    }, ballRadius, {
-        angle: Util.Mathematics.randomIn(0, 360),
-        speed: Util.Mathematics.randomIn(2, maxSpeed)
-    });
+    do {
+        console.log('try to fit');
+        var ballRadius = Util.Mathematics.randomIn(minRadius, maxRadius);
+        var ball = new Shapes.Ball(world, {
+            x: Util.Mathematics.randomIn(ballRadius + 1, canv.width - ballRadius - 1),
+            y: Util.Mathematics.randomIn(ballRadius + 1, canv.height - ballRadius - 1)
+        }, ballRadius, {
+            angle: Util.Mathematics.randomIn(0, 360),
+            speed: Util.Mathematics.randomIn(minSpeed, maxSpeed)
+        });
+    } while (overlaps(ball, balls));
+    balls.push(ball);
     renderProcess.addTarget(ball);
     moveProcess.addTarget(ball);
     collisionProcess.addTarget(ball);
+}
+function overlaps(ball, balls) {
+    for (var b = 0; b < balls.length; b++) {
+        if (Util.Physics.isOverlapping(ball, balls[b]))
+            return true;
+    }
+    return false;
 }
 // gameloop
 (function gameLoop(fps) {
@@ -242,6 +278,6 @@ function drawScreen() {
     // take out for a cool effect
     world.clearRect(0, 0, canv.width, canv.height);
     renderProcess.update();
-    moveProcess.update();
+    //moveProcess.update();
     collisionProcess.update(canv);
 }

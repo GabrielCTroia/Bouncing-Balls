@@ -9,7 +9,7 @@ module Shapes {
 
   export interface IShape {
     //new():IShape;
-    update (position: IPoint):void;
+    //update (position: IPoint):void;
     getPosition(): IPoint;
   }
 

@@ -3,6 +3,7 @@
 /// <reference path="Shapes/Point" />
 /// <reference path="Util/Geometry" />
 /// <reference path="Util/Mathematics" />
+/// <reference path="Util/Physics" />
 /// <reference path="Processes/RenderProcess" />
 
 var canv = document.createElement("canvas");
@@ -22,8 +23,13 @@ var world = getWorld();
 
 // config
 var maxShapes = 50;
+
+var minRadius = 20;
 var maxRadius = canv.width / 10;
-var maxSpeed = 15;
+
+var minSpeed = 5;
+var maxSpeed = 5;
+
 
 // processes
 var renderProcess = new Processes.RenderProcess();
@@ -31,22 +37,38 @@ var moveProcess = new Processes.MoveProcess();
 var collisionProcess = new Processes.CollisionProcess();
 
 
+var balls: Shapes.Ball[] = [];
+
 for (var i = 0; i < maxShapes; i++) {
-  var ballRadius = Util.Mathematics.randomIn(10, maxRadius);
-  var ball = new Shapes.Ball(world,
-    {
-      x: Util.Mathematics.randomIn(ballRadius + 1, canv.width - ballRadius - 1),
-      y: Util.Mathematics.randomIn(ballRadius + 1, canv.height - ballRadius - 1)
-    },
-    ballRadius,
-    {
-      angle: Util.Mathematics.randomIn(0, 360),
-      speed: Util.Mathematics.randomIn(2, maxSpeed)
-    });
+  do {
+    console.log('try to fit')
+    var ballRadius = Util.Mathematics.randomIn(minRadius, maxRadius);
+    var ball = new Shapes.Ball(
+      world,
+      {
+        x: Util.Mathematics.randomIn(ballRadius + 1, canv.width - ballRadius - 1),
+        y: Util.Mathematics.randomIn(ballRadius + 1, canv.height - ballRadius - 1)
+      },
+      ballRadius,
+      {
+        angle: Util.Mathematics.randomIn(0, 360),
+        speed: Util.Mathematics.randomIn(minSpeed, maxSpeed)
+      });
+  } while (overlaps(ball, balls));
+
+  balls.push(ball);
 
   renderProcess.addTarget(ball);
   moveProcess.addTarget(ball);
   collisionProcess.addTarget(ball);
+}
+
+function overlaps(ball, balls) {
+  for (var b = 0; b < balls.length; b++) {
+    if (Util.Physics.isOverlapping(ball, balls[b]))
+      return true;
+  }
+  return false;
 }
 
 
@@ -65,7 +87,7 @@ function drawScreen() {
   world.clearRect(0, 0, canv.width, canv.height);
 
   renderProcess.update();
-  moveProcess.update();
+  //moveProcess.update();
   collisionProcess.update(canv);
 }
 
